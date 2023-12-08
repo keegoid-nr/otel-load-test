@@ -1,0 +1,137 @@
+from opentelemetry import metrics
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+import signal
+import os
+import sys
+import random
+import time
+# import asyncio
+
+
+# Define a signal handler function
+def signal_handler(sig, frame):
+    global stop_application
+    print("SIGINT received. Gracefully stopping the application...")
+    sys.exit(0)
+
+
+def generate_metrics(meter):
+    # Initialize counters for metrics generated and exported
+    # metrics_generated = 0
+
+    # Create a counter for HTTP requests
+    # This becomes a metricName in New Relic
+    http_requests_counter = meter.create_counter(
+        "http_requests", description="Number of HTTP requests", unit="1"
+    )
+
+    # Create a gauge for error rate
+    # This becomes a metricName in New Relic
+    error_rate_counter = meter.create_up_down_counter(
+        "error_rate", description="Error rate", unit="1"
+    )
+
+    # Generate metrics
+    http_methods = ["GET", "POST", "PUT", "DELETE"]
+    status_codes = [200, 201, 202, 400, 401, 403, 404, 500, 502, 503, 504]
+
+    # These lines calculate the remaining probability (0.05) and distribute it randomly among the other status codes.
+    # The random.choices() function with a range of weights between 0.001 and 1 is used to generate random weights for the other status codes.
+    # Then, the weights are normalized to sum up to the remaining probability (0.05).
+    # Finally, the status_code_weights list is created by adding the 0.95 probability for the 200 status code and the randomly assigned weights for the other status codes.
+
+    while True:
+        remaining_probability = 0.05
+        other_status_code_weights = random.choices(
+            [x / 1000 for x in range(1, 1001)], k=len(status_codes) - 1
+        )
+        other_status_code_weights = [
+            weight * remaining_probability / sum(other_status_code_weights)
+            for weight in other_status_code_weights
+        ]
+        status_code_weights = [0.95] + other_status_code_weights
+
+        # provider.force_flush()
+        method = random.choice(http_methods)
+        status_code = random.choices(status_codes, weights=status_code_weights, k=1)[0]
+        chosen_weight = status_code_weights[status_codes.index(status_code)]
+        value = random.randint(1, 1000)
+        labels = {
+            "http.method": method,
+            "http.status_code": str(status_code),
+            "http.server.duration": value,
+        }
+
+        # Update the http requests counter
+        http_requests_counter.add(1, labels)
+
+        # metrics_generated += 1
+        # exporter.export([http_requests_counter.collect()])
+
+        # Update the error rate gauge if the status code is not a 2xx status code
+        if status_code > 202:
+            error_rate_counter.add(chosen_weight, labels)
+            # metrics_generated += 1
+            # exporter.export([error_rate_counter.collect()])
+            # print(
+            #     f"Metric sent: http.method={method}, http.status_code={status_code}, "
+            #     f"error_rate={chosen_weight:.3f}, http.server.duration={value}",
+            #     flush=True
+            # )
+
+        # Print the count of metrics generated and exported
+        # print(
+        #     f"Metrics generated: {metrics_generated}, Metrics exported: {exported_metrics_counter.value}",
+        #     flush=True
+        # )
+
+        sleep_duration = random.uniform(0.01, 0.1)
+        time.sleep(sleep_duration)
+
+
+# otel-load-test.py
+def main():
+    print("Application is starting...", flush=True)
+
+    # Create a resource for the metrics (optional)
+    resource = Resource(
+        attributes={"service.name": "otel-load-test", "service.instance.id": "app-1"}
+    )
+
+    # Configure the OTLP Exporter
+    exporter = OTLPMetricExporter(
+        endpoint=os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"),
+        insecure=True,
+    )
+
+    # Configure the MeterProvider with the PushMetricExporter
+    provider = MeterProvider(
+        resource=resource,
+        metric_readers=[
+            PeriodicExportingMetricReader(
+                exporter,
+                export_interval_millis=1000,
+                export_timeout_millis=None,
+            )
+        ],
+    )
+
+    # Set the global MeterProvider
+    metrics.set_meter_provider(provider)
+
+    # Create a meter
+    meter = metrics.get_meter("otel-load-test", version="0.1")
+
+    # Run the metric generation function in a loop
+    generate_metrics(meter)
+
+
+# Register the signal handler function for SIGINT
+signal.signal(signal.SIGINT, signal_handler)
+
+# Run the main function asynchronously
+if __name__ == "__main__":
+    main()
