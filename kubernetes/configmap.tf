@@ -9,8 +9,8 @@ resource "kubernetes_config_map" "otel_config" {
     "otel-config.yaml" = <<EOT
 extensions:
 health_check:
-pprof:
-  endpoint: :1777
+# pprof:
+#   endpoint: :1777
 zpages:
   endpoint: :55679
 receivers:
@@ -27,8 +27,7 @@ processors:
     # send_batch_max_size: 200
 exporters:
   debug:
-    # verbosity: basic
-    verbosity: detailed
+    verbosity: "${var.log_exporter_log_verbosity}"
   otlp:
     endpoint: "${var.NEW_RELIC_OTLP_ENDPOINT}"
     headers:
@@ -41,10 +40,10 @@ exporters:
       max_elapsed_time: 120s
     sending_queue:
       enabled: true
-      num_consumers: 2
+      num_consumers: 10
       queue_size: 50 # num_seconds * requests_per_second / requests_per_batch
 service:
-  extensions: [pprof, zpages, health_check]
+  extensions: [zpages, health_check]
   pipelines:
     metrics:
       receivers: [otlp]

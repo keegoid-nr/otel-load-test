@@ -53,7 +53,7 @@ variable "description" {
 variable "log_exporter_log_verbosity" {
   description = "Verbosity level for the logging exporter"
   type        = string
-  default     = "detailed"  # Set a default or remove this line to require an explicit value
+  default     = "basic"  # Set a default or remove this line to require an explicit value
 }
 
 variable "NEW_RELIC_OTLP_ENDPOINT" {
