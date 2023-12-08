@@ -1,11 +1,11 @@
-# -----------------------------------------------------
+# ------------------------------------------------------
 # Generate random metrics to load test OTel collector.
 #
 # Author : Keegan Mullaney
 # Company: New Relic
 # Website: github.com/keegoid-nr/otel-load-test
 # License: Apache 2.0
-# -----------------------------------------------------
+# ------------------------------------------------------
 
 import random
 import time
