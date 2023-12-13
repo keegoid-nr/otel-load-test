@@ -1,7 +1,7 @@
 resource "kubernetes_daemonset" "otel_collector" {
   metadata {
     name = "otel-collector"
-    namespace = kubernetes_namespace.opentelemetry.metadata[0].name
+    namespace = kubernetes_namespace.otel.metadata[0].name
     labels = {
       app = "otel-collector"
     }
@@ -23,24 +23,36 @@ resource "kubernetes_daemonset" "otel_collector" {
 
       spec {
         container {
-          name  = "collector"
-          image = "otel/opentelemetry-collector:latest"
-
-          args = [
-            "--config=/etc/otel/config/otel-config.yaml",
-          ]
+          image = "otel/opentelemetry-collector-contrib:latest"
+          name  = "otel-collector"
 
           env {
             name  = "LOG_EXPORTER_LOG_VERBOSITY"
-            value = var.log_exporter_log_verbosity
+            value = var.LOG_EXPORTER_VERBOSITY
           }
 
-          port {
-            container_port = 4317   // gRPC
+          env {
+            name  = "NEW_RELIC_OTLP_ENDPOINT"
+            value = var.NEW_RELIC_OTLP_ENDPOINT
           }
-          port {
-            container_port = 13133  // Health check
+
+          env {
+            name  = "NEW_RELIC_API_KEY"
+            value = var.NEW_RELIC_API_KEY
           }
+
+          # args = [
+          #   "--config=/etc/otel/config/otel-config.yaml",
+          # ]
+
+          command = ["--config=/otel-config.yaml"]
+
+          # port {
+          #   container_port = 4317   // gRPC
+          # }
+          # port {
+          #   container_port = 13133  // Health check
+          # }
 
           resources {
             limits = {
@@ -54,8 +66,9 @@ resource "kubernetes_daemonset" "otel_collector" {
           }
 
           volume_mount {
+            # mount_path = "/etc/otel/config"
+            mount_path = "/otel-config.yaml"
             name       = "config-volume"
-            mount_path = "/etc/otel/config"
             read_only  = true
           }
         }
@@ -74,36 +87,57 @@ resource "kubernetes_daemonset" "otel_collector" {
 
 resource "kubernetes_daemonset" "otel_load_test" {
   metadata {
-    name      = var.container_repository
-    namespace = kubernetes_namespace.opentelemetry.metadata[0].name
+    name      = var.repository_name
+    namespace = kubernetes_namespace.otel.metadata[0].name
   }
 
   spec {
     selector {
       match_labels = {
-        app = var.container_repository
+        app = var.repository_name
       }
     }
 
     template {
       metadata {
         labels = {
-          app = var.container_repository
+          app = var.repository_name
         }
       }
 
       spec {
         container {
-          name  = var.container_repository
-          image = "${var.container_registry}/${var.container_repository}:latest"
+          image = "${var.registry_name}/${var.repository_name}:latest"
+          name  = var.repository_name
 
           env {
-            name  = "OTEL_COLLECTOR_ADDRESS"
-            value = "${data.kubernetes_service.otel_collector.metadata[0].name}.${data.kubernetes_service.otel_collector.metadata[0].namespace}:4317"
+            name  = "OTEL_SERVICE_NAME"
+            value = var.repository_name
           }
 
-          port {
-            container_port = 4317
+          env {
+            name  = "OTEL_LOGS_EXPORTER"
+            value = "debug"
+          }
+
+          env {
+            name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+            value = "http://otel-collector:4317"
+          }
+
+          env {
+            name  = "OTEL_EXPERIMENTAL_RESOURCE_DISABLED_KEYS"
+            value = "process.command_line,process.command_args"
+          }
+
+          env {
+            name  = "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE"
+            value = "delta"
+          }
+
+          env {
+            name  = "OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT"
+            value = 4095
           }
         }
       }

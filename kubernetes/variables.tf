@@ -10,6 +10,12 @@ variable "cluster_name" {
   type        = string
 }
 
+variable "cluster_version" {
+  description = "Version of the EKS cluster"
+  default     = "1.28"
+  type        = string
+}
+
 variable "public_subnets" {
   description = "List of public subnet IDs for the EKS cluster"
   type        = list(string)
@@ -25,12 +31,12 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "container_registry" {
+variable "registry_name" {
   description = "Container repository for the otel-load-test app"
   type        = string
 }
 
-variable "container_repository" {
+variable "repository_name" {
   description = "Go module for the otel-load-test app"
   type        = string
 }
@@ -50,10 +56,10 @@ variable "description" {
   type        = string
 }
 
-variable "log_exporter_log_verbosity" {
+variable "LOG_EXPORTER_VERBOSITY" {
   description = "Verbosity level for the logging exporter"
   type        = string
-  default     = "basic"  # Set a default or remove this line to require an explicit value
+  default     = "basic"
 }
 
 variable "NEW_RELIC_OTLP_ENDPOINT" {

@@ -8,19 +8,19 @@
 # License: Apache 2.0
 # ------------------------------------------------------
 
-# Retrieve CONTAINER_REPOSITORY and CONTAINER_REPOSITORY from the arguments
-CONTAINER_REGISTRY=$1
-CONTAINER_REPOSITORY=$2
+# Retrieve REPOSITORY_NAME and REPOSITORY_NAME from the arguments
+REGISTRY_NAME=$1
+REPOSITORY_NAME=$2
 
-aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin "${CONTAINER_REGISTRY}"
+aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin "${REGISTRY_NAME}"
 
 # Build the Docker image
-docker build -t "${CONTAINER_REPOSITORY}" ../go/
+docker build -t "${REPOSITORY_NAME}" ../go/
 
 # Tag the image
-docker tag "${CONTAINER_REPOSITORY}:latest" "${CONTAINER_REGISTRY}/${CONTAINER_REPOSITORY}:latest"
+docker tag "${REPOSITORY_NAME}:latest" "${REGISTRY_NAME}/${REPOSITORY_NAME}:latest"
 
 # Push the Docker image
-docker push "${CONTAINER_REGISTRY}/${CONTAINER_REPOSITORY}:latest"
+docker push "${REGISTRY_NAME}/${REPOSITORY_NAME}:latest"
 
-echo "$CONTAINER_REPOSITORY container image has been built and pushed to $CONTAINER_REGISTRY/$CONTAINER_REPOSITORY:latest"
+echo "$REPOSITORY_NAME container image has been built and pushed to $REGISTRY_NAME/$REPOSITORY_NAME:latest"

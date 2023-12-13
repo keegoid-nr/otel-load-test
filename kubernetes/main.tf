@@ -29,9 +29,7 @@ provider "kubernetes" {
 
 locals {
   cluster_name = var.cluster_name
-}
-
-locals {
+  cluster_version = var.cluster_version
   tags = {
     Terraform = "true"
     Environment = "dev"
@@ -44,17 +42,14 @@ locals {
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "19.17.4"
-
   cluster_name = local.cluster_name
-  cluster_version = "1.28"
-  cluster_endpoint_public_access = true
+  cluster_version = local.cluster_version
   subnet_ids = concat(var.public_subnets, var.private_subnets)
-
   vpc_id = var.vpc_id
-
   tags = local.tags
 
   # EKS configuration
+  cluster_endpoint_public_access = true
   manage_aws_auth_configmap = true
 
   # Node group configuration
@@ -87,17 +82,17 @@ module "eks" {
   }
 }
 
-output "container_registry" {
-  value = var.container_registry
+output "registry_name" {
+  value = var.registry_name
 }
 
-output "container_repository" {
-  value = var.container_repository
+output "repository_name" {
+  value = var.repository_name
 }
 
 # run with:
 # terraform apply -auto-approve
 # terraform output -json > terraform_output.json
 # ./build_and_push.sh \
-#   $(jq -r '.container_registry.value' terraform_output.json) \
-#   $(jq -r '.container_repository.value' terraform_output.json)
+#   $(jq -r '.registry_name.value' terraform_output.json) \
+#   $(jq -r '.repository_name.value' terraform_output.json)
