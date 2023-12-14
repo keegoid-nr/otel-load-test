@@ -10,23 +10,28 @@
 package main
 
 import (
-	"context"
-	"log"
+  "context"
+  "log"
+  "os"
+  "os/signal"
+  "syscall"
+  "time"
   "math/rand"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+  "strconv"
+  "sync/atomic"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+  "go.opentelemetry.io/otel/attribute"
+  "go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+  "go.opentelemetry.io/otel/sdk/metric"
+  "go.opentelemetry.io/otel/sdk/resource"
+  semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
   api "go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 const meterName = "github.com/keegoid-nr/otel-load-test"
+
+// Declare a global variable for the total number of data points generated
+var globalDataPointsGenerated int64 = 0
 
 func main() {
   log.Println("Application is starting...")
@@ -77,57 +82,87 @@ func main() {
 }
 
 func generateMetrics(ctx context.Context, meter api.Meter) {
-  // request counter
-  httpRequestsCounter, err := meter.Int64Counter("http_count", api.WithDescription("count of HTTP requests"))
+  // Initialize metrics
+  durationHistogram, err := meter.Float64Histogram("http.server.duration", api.WithDescription("histogram of HTTP durations"))
   if err != nil {
-		log.Fatalf("failed to create httpRequestsCounter: %v\n", err)
-	}
+    log.Fatalf("failed to create durationHistogram: %v\n", err)
+  }
 
-  // error rate gauge
-  errorRateGauge, err := meter.Float64ObservableGauge("error_rate", api.WithDescription("rate of status_code errors"))
+  httpRequestsCounter, err := meter.Int64Counter("http.request.count", api.WithDescription("count of HTTP requests"))
   if err != nil {
-		log.Fatalf("failed to create errorRateGauge: %v\n", err)
-	}
+    log.Fatalf("failed to create httpRequestsCounter: %v\n", err)
+  }
 
-  // methods and status codes
+  errorRateGauge, err := meter.Float64ObservableGauge("http.error.rate", api.WithDescription("rate of HTTP errors"))
+  if err != nil {
+    log.Fatalf("failed to create errorRateGauge: %v\n", err)
+  }
+
+  // Initialize HTTP methods and status codes
   httpMethods := []string{"GET", "POST", "PUT", "DELETE"}
   statusCodes := []int{200, 201, 202, 204, 400, 401, 403, 404, 500, 502, 503, 504}
 
-  // metric generation loop
-  for {
-    statusCodeWeights := generateStatusCodeWeights(statusCodes)
-    // log.Printf("Status Code Weights: %0.6f\n", statusCodeWeights)
+  // Read metrics per second from the environment variable and calculate sleep duration
+  metricsPerSecondEnv := os.Getenv("METRICS_PER_SECOND")
+  metricsPerSecond, err := strconv.Atoi(metricsPerSecondEnv)
+  if err != nil || metricsPerSecond <= 0 {
+    metricsPerSecond = 10
+  }
+  sleepDuration := time.Duration(1000/metricsPerSecond) * time.Millisecond
 
+	// Initialize variables for calculating metrics per second
+	startTime := time.Now()
+	desiredMetricsPerSecond := float64(metricsPerSecond)
+	sleepDurationAdjustmentStep := 10 * time.Millisecond // Fixed sleep duration adjustment step
+
+  // Metric generation loop
+  for {
+    // Generate metrics and labels
+    statusCodeWeights := generateStatusCodeWeights(statusCodes)
     method := httpMethods[rand.Intn(len(httpMethods))]
     statusCode := weightedChoice(statusCodes, statusCodeWeights)
-    // log.Printf("Chosen Status Code: %d\n", statusCode)
-
-    value := rand.Int63n(1000) + 1
-
     labels := api.WithAttributes(
       attribute.Key("http.method").String(method),
       attribute.Key("http.status_code").Int(statusCode),
-      attribute.Key("http.server.duration").Int64(value),
     )
 
+    // Record metrics
+    duration := rand.Float64() * 1_000
+    durationHistogram.Record(ctx, duration, labels)
     httpRequestsCounter.Add(ctx, 1, labels)
 
+    dataPointsGenerated := 2 // for durationHistogram and httpRequestsCounter
+
     if statusCode > 204 {
-      chosenWeight := statusCodeWeights[findIndex(statusCodes, statusCode)]
-      log.Printf("Status Code Weights: %0.6f\n", statusCodeWeights)
-      log.Printf("Chosen Status Code: %d\n", statusCode)
-      log.Printf("Chosen Weight: %0.6f\n", chosenWeight)
+      errorRate := statusCodeWeights[findIndex(statusCodes, statusCode)]
+      log.Printf("Status Code: %d, Error Rate: %0.6f\n", statusCode, errorRate)
       _, err = meter.RegisterCallback(func(_ context.Context, o api.Observer) error {
-        o.ObserveFloat64(errorRateGauge, chosenWeight, labels)
+        o.ObserveFloat64(errorRateGauge, errorRate, labels)
+        dataPointsGenerated++ // increment dataPointsGenerated for errorRateGauge
         return nil
       }, errorRateGauge)
       if err != nil {
-        log.Fatalf("failed to observe chosenWeight: %v\n", err)
+        log.Fatalf("failed to observe errorRate: %v\n", err)
       }
     }
 
-    sleepDuration := time.Duration(rand.Intn(100-10)+10) * time.Millisecond
-    time.Sleep(sleepDuration)
+		// Update the global count of data points generated
+		atomic.AddInt64(&globalDataPointsGenerated, int64(dataPointsGenerated))
+
+		// Calculate the total elapsed time since the start of the process
+		totalElapsedTime := time.Since(startTime).Seconds()
+
+		// Calculate the actual metrics per second based on the global count
+		actualMetricsPerSecond := float64(globalDataPointsGenerated) / totalElapsedTime
+
+		// Adjust sleep duration
+		sleepDuration = adjustSleepDuration(sleepDurationAdjustmentStep, desiredMetricsPerSecond, actualMetricsPerSecond, sleepDuration)
+
+		// Print the current metrics per second and sleep duration
+		log.Printf("Metrics per second: %0.1f, Sleep duration: %v\n", actualMetricsPerSecond, sleepDuration)
+
+		// Sleep for the calculated duration
+		time.Sleep(sleepDuration)
   }
 }
 
@@ -176,4 +211,19 @@ func findIndex(arr []int, target int) int {
         }
     }
     return -1
+}
+
+func adjustSleepDuration(step time.Duration, desiredMetricsPerSecond, actualMetricsPerSecond float64, sleepDuration time.Duration) time.Duration {
+	if actualMetricsPerSecond < desiredMetricsPerSecond {
+		sleepDuration -= step
+	} else {
+		sleepDuration += step
+	}
+
+	// Ensure sleepDuration does not become negative
+	if sleepDuration < 0 {
+		sleepDuration = 0
+	}
+
+	return sleepDuration
 }

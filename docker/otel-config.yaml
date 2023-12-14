@@ -1,7 +1,7 @@
 extensions:
  health_check:
-#  pprof:
-#    endpoint: :1777
+ pprof:
+   endpoint: :1777
  zpages:
    endpoint: :55679
 receivers:
@@ -35,7 +35,7 @@ exporters:
       num_consumers: 10
       queue_size: 50 # num_seconds * requests_per_second / requests_per_batch
 service:
-  extensions: [zpages, health_check]
+  extensions: [pprof, zpages, health_check]
   pipelines:
     metrics:
       receivers: [otlp]
