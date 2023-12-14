@@ -10,5 +10,7 @@
 
 source .env
 docker-compose down --remove-orphans
-docker-compose build --no-cache
+docker container prune -f
+docker network prune -f
+docker-compose build --no-cache --force-rm -t otel-load-test:latest ../${RUNTIME}/
 docker-compose up

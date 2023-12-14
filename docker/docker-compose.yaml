@@ -5,6 +5,7 @@ services:
     build:
       context: ../${RUNTIME}/
       dockerfile: Dockerfile
+    image: otel-load-test:latest
     networks:
       - otel
     environment:
