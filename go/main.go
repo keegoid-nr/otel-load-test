@@ -29,6 +29,7 @@ import (
 )
 
 const meterName = "github.com/keegoid-nr/otel-load-test"
+const meterVersion = "0.1.0"
 
 // Declare a global variable for the total number of data points generated
 var globalDataPointsGenerated int64 = 0
@@ -38,7 +39,7 @@ func main() {
 
   ctx := context.Background()
 
-  // Create a Meter Provider with custom aggregation selector
+  // Create a resource
   res, err := resource.Merge(resource.Default(),
     resource.NewWithAttributes(semconv.SchemaURL,
       semconv.ServiceName("otel-load-test"),
@@ -68,7 +69,7 @@ func main() {
     metric.WithReader(reader),
   )
 
-  meter := provider.Meter(meterName)
+  meter := provider.Meter(meterName, api.WithInstrumentationVersion(meterVersion))
 
   // Start metric generation
   go generateMetrics(ctx, meter)
@@ -82,13 +83,17 @@ func main() {
 }
 
 func generateMetrics(ctx context.Context, meter api.Meter) {
+  // Add a ticker to print metrics per second every 5 seconds
+  ticker := time.NewTicker(5 * time.Second)
+  defer ticker.Stop()
+
   // Initialize metrics
-  durationHistogram, err := meter.Float64Histogram("http.server.duration", api.WithDescription("histogram of HTTP durations"))
+  durationHistogram, err := meter.Float64Histogram("http.server.duration", api.WithDescription("histogram of HTTP durations"), api.WithUnit("ms"))
   if err != nil {
     log.Fatalf("failed to create durationHistogram: %v\n", err)
   }
 
-  httpRequestsCounter, err := meter.Int64Counter("http.request.count", api.WithDescription("count of HTTP requests"))
+  httpRequestsCounter, err := meter.Int64Counter("http.request.count", api.WithDescription("count of HTTP requests"), api.WithUnit("requests"))
   if err != nil {
     log.Fatalf("failed to create httpRequestsCounter: %v\n", err)
   }
@@ -108,12 +113,12 @@ func generateMetrics(ctx context.Context, meter api.Meter) {
   if err != nil || metricsPerSecond <= 0 {
     metricsPerSecond = 10
   }
-  sleepDuration := time.Duration(1000/metricsPerSecond) * time.Millisecond
+  sleepDuration := time.Duration(1_000/metricsPerSecond) * time.Millisecond
 
-	// Initialize variables for calculating metrics per second
-	startTime := time.Now()
-	desiredMetricsPerSecond := float64(metricsPerSecond)
-	sleepDurationAdjustmentStep := 10 * time.Millisecond // Fixed sleep duration adjustment step
+  // Initialize variables for calculating metrics per second
+  startTime := time.Now()
+  desiredMetricsPerSecond := float64(metricsPerSecond)
+  sleepDurationAdjustmentStep := 10 * time.Millisecond // Fixed sleep duration adjustment step
 
   // Metric generation loop
   for {
@@ -146,23 +151,31 @@ func generateMetrics(ctx context.Context, meter api.Meter) {
       }
     }
 
-		// Update the global count of data points generated
-		atomic.AddInt64(&globalDataPointsGenerated, int64(dataPointsGenerated))
+    // Update the global count of data points generated
+    atomic.AddInt64(&globalDataPointsGenerated, int64(dataPointsGenerated))
 
-		// Calculate the total elapsed time since the start of the process
-		totalElapsedTime := time.Since(startTime).Seconds()
+    // Calculate the total elapsed time since the start of the process
+    totalElapsedTime := time.Since(startTime).Seconds()
 
-		// Calculate the actual metrics per second based on the global count
-		actualMetricsPerSecond := float64(globalDataPointsGenerated) / totalElapsedTime
+    // Calculate the actual metrics per second based on the global count
+    actualMetricsPerSecond := float64(globalDataPointsGenerated) / totalElapsedTime
 
-		// Adjust sleep duration
-		sleepDuration = adjustSleepDuration(sleepDurationAdjustmentStep, desiredMetricsPerSecond, actualMetricsPerSecond, sleepDuration)
+    // Adjust sleep duration
+    sleepDuration = adjustSleepDuration(sleepDurationAdjustmentStep, desiredMetricsPerSecond, actualMetricsPerSecond, sleepDuration)
 
-		// Print the current metrics per second and sleep duration
-		log.Printf("Metrics per second: %0.1f, Sleep duration: %v\n", actualMetricsPerSecond, sleepDuration)
+    // Sleep for the calculated duration
+    time.Sleep(sleepDuration)
 
-		// Sleep for the calculated duration
-		time.Sleep(sleepDuration)
+    select {
+    case <-ticker.C:
+      // Print the current metrics per second and sleep duration
+      log.Printf("Metrics per second: %0.1f, Sleep duration: %v\n", actualMetricsPerSecond, sleepDuration)
+    default:
+      // Do nothing
+    }
+
+    // Sleep for the calculated duration
+    time.Sleep(sleepDuration)
   }
 }
 
