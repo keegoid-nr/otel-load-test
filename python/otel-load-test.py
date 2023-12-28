@@ -43,7 +43,7 @@ def main():
     exporter = OTLPMetricExporter(insecure=True)
 
     # Create a periodic reader
-    reader = PeriodicExportingMetricReader(exporter, export_interval_millis=5_000)
+    reader = PeriodicExportingMetricReader(exporter, export_interval_millis=5000)
 
     # Create a meter
     provider = MeterProvider(resource=resource, metric_readers=[reader])

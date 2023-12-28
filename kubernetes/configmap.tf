@@ -1,5 +1,5 @@
 data "template_file" "otel_config" {
-  template = file("${path.module}/otel-config.yaml.tpl")
+  template = file("${path.module}/otel-config-${var.OTEL_CONFIG_COMPLEXITY}.yaml.tpl")
 
   vars = {
     LOG_EXPORTER_VERBOSITY = var.LOG_EXPORTER_VERBOSITY
@@ -26,7 +26,7 @@ resource "kubernetes_config_map" "otel_config" {
 # # pprof:
 # #   endpoint: :1777
 # zpages:
-#   endpoint: :55679
+#   endpoint: :25679
 # receivers:
 #   otlp:
 #     protocols:

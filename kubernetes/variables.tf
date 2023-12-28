@@ -32,12 +32,17 @@ variable "vpc_id" {
 }
 
 variable "registry_name" {
-  description = "Container repository for the otel-load-test app"
+  description = "Registry for the otel-load-test image"
   type        = string
 }
 
 variable "repository_name" {
-  description = "Go module for the otel-load-test app"
+  description = "Repository for the otel-load-test image"
+  type        = string
+}
+
+variable "runtime" {
+  description = "Runtime for the otel-load-test app"
   type        = string
 }
 
@@ -56,12 +61,6 @@ variable "description" {
   type        = string
 }
 
-variable "LOG_EXPORTER_VERBOSITY" {
-  description = "Verbosity level for the logging exporter"
-  type        = string
-  default     = "basic"
-}
-
 variable "NEW_RELIC_OTLP_ENDPOINT" {
   description = "The New Relic OTLP endpoint for metrics"
   type        = string
@@ -70,4 +69,16 @@ variable "NEW_RELIC_OTLP_ENDPOINT" {
 variable "NEW_RELIC_API_KEY" {
   description = "The New Relic API key"
   type        = string
+}
+
+variable "LOG_EXPORTER_VERBOSITY" {
+  description = "Verbosity level for the logging exporter"
+  type        = string
+  default     = "basic"
+}
+
+variable "OTEL_CONFIG_COMPLEXITY" {
+  description = "Which config yaml to use"
+  type        = string
+  default     = "simple"
 }

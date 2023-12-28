@@ -90,9 +90,14 @@ output "repository_name" {
   value = var.repository_name
 }
 
+output "runtime" {
+  value = var.runtime
+}
+
 # run with:
 # terraform apply -auto-approve
 # terraform output -json > terraform_output.json
 # ./build_and_push.sh \
 #   $(jq -r '.registry_name.value' terraform_output.json) \
-#   $(jq -r '.repository_name.value' terraform_output.json)
+#   $(jq -r '.repository_name.value' terraform_output.json) \
+#   $(jq -r '.runtime.value' terraform_output.json)

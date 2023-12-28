@@ -3,12 +3,27 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Docker](#docker)
+  - [Setup](#setup)
+  - [Troubleshooting](#troubleshooting)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Docker
 
 This directory contains the config files to run either the Go or Python otel-load-test app and the collector.
+
+## Setup
+
+Create a `.env` file to store environment variables for the [build_and_run.sh](./build_and_run.sh) script.
+
+```sh
+NEW_RELIC_API_KEY=<your_key>
+LOG_EXPORTER_VERBOSITY=basic # basic or detailed
+OTEL_CONFIG_COMPLEXITY=complex # simple or complex
+RUNTIME=go # go or python
+```
+
+## Troubleshooting
 
 If the collector is not configured correctly, it may not export metrics fast enough. In that case, you'll see an error like the following for the Go app:
 

@@ -8,14 +8,15 @@
 # License: Apache 2.0
 # ------------------------------------------------------
 
-# Retrieve REPOSITORY_NAME and REPOSITORY_NAME from the arguments
+# Retrieve variable values from the input arguments
 REGISTRY_NAME=$1
 REPOSITORY_NAME=$2
+RUNTIME=$3
 
 aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin "${REGISTRY_NAME}"
 
 # Build the Docker image
-docker build -t "${REPOSITORY_NAME}" ../go/
+docker build -t "${REPOSITORY_NAME}" "../${RUNTIME}/"
 
 # Tag the image
 docker tag "${REPOSITORY_NAME}:latest" "${REGISTRY_NAME}/${REPOSITORY_NAME}:latest"

@@ -40,8 +40,8 @@ data "kubernetes_service" "otel_collector" {
     }
 
     port {
-      port        = 55679  // zpages extension | https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md
-      target_port = 55679
+      port        = 25679  // zpages extension | https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md
+      target_port = 25679
     }
 
     type = "ClusterIP"

@@ -5,6 +5,7 @@
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Prerequisites:](#prerequisites)
+- [Setup](#setup)
 - [Install](#install)
 - [Components](#components)
   - [main.tf](#maintf)
@@ -22,6 +23,17 @@
 - Go 1.21
 - Terraform 1.5.7
 - AWS CLI 2.11.21
+
+## Setup
+
+Create a `terraform.tfvars` file to store variable values for Terraform to use.
+
+```sh
+NEW_RELIC_API_KEY=<your_key>
+LOG_EXPORTER_VERBOSITY=basic # basic or detailed
+OTEL_CONFIG_COMPLEXITY=complex # simple or complex
+RUNTIME=go # go or python
+```
 
 ## Install
 
