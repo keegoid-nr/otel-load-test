@@ -8,7 +8,7 @@ connectors:
 
 exporters:
   debug:
-    verbosity: $LOG_EXPORTER_VERBOSITY
+    verbosity: basic
   otlp/newrelic:
     endpoint: "https://otlp.nr-data.net:4317"
     compression: gzip
@@ -16,7 +16,7 @@ exporters:
       queue_size: 50 # num_seconds * requests_per_second / requests_per_batch
       # num_consumers: 10
     headers:
-      "api-key": $NEW_RELIC_API_KEY
+      "api-key": ${NEW_RELIC_API_KEY}
     # retry_on_failure:
     #   enabled: true
     #   initial_interval: 1s

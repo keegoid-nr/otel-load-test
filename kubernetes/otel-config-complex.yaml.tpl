@@ -8,7 +8,7 @@ connectors:
 
 exporters:
   debug:
-    verbosity: ${LOG_EXPORTER_VERBOSITY}
+    verbosity: basic
   otlp/newrelic:
     endpoint: "https://otlp.nr-data.net:4317"
     compression: gzip
@@ -150,8 +150,10 @@ processors:
 receivers:
   otlp:
     protocols:
-      grpc: null
-      http: null
+      grpc:
+        endpoint: ${env:MY_POD_IP}:4317
+      http:
+        endpoint: ${env:MY_POD_IP}:4318
 
 service:
   extensions:

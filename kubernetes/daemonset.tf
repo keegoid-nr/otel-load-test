@@ -1,90 +1,3 @@
-resource "kubernetes_daemonset" "otel_collector" {
-  metadata {
-    name = "otel-collector"
-    namespace = kubernetes_namespace.otel.metadata[0].name
-    labels = {
-      app = "otel-collector"
-    }
-  }
-
-  spec {
-    selector {
-      match_labels = {
-        app = "otel-collector"
-      }
-    }
-
-    template {
-      metadata {
-        labels = {
-          app = "otel-collector"
-        }
-      }
-
-      spec {
-        container {
-          image = "otel/opentelemetry-collector-contrib:latest"
-          name  = "otel-collector"
-
-          env {
-            name  = "LOG_EXPORTER_LOG_VERBOSITY"
-            value = var.LOG_EXPORTER_VERBOSITY
-          }
-
-          env {
-            name  = "NEW_RELIC_OTLP_ENDPOINT"
-            value = var.NEW_RELIC_OTLP_ENDPOINT
-          }
-
-          env {
-            name  = "NEW_RELIC_API_KEY"
-            value = var.NEW_RELIC_API_KEY
-          }
-
-          # args = [
-          #   "--config=/etc/otel/config/otel-config.yaml",
-          # ]
-
-          command = ["--config=/otel-config.yaml"]
-
-          # port {
-          #   container_port = 4317   // gRPC
-          # }
-          # port {
-          #   container_port = 13133  // Health check
-          # }
-
-          resources {
-            limits = {
-              cpu    = "500m"
-              memory = "256Mi"
-            }
-            requests = {
-              cpu    = "250m"
-              memory = "128Mi"
-            }
-          }
-
-          volume_mount {
-            # mount_path = "/etc/otel/config"
-            mount_path = "/otel-config.yaml"
-            name       = "config-volume"
-            read_only  = true
-          }
-        }
-
-        volume {
-          name = "config-volume"
-
-          config_map {
-            name = kubernetes_config_map.otel_config.metadata[0].name
-          }
-        }
-      }
-    }
-  }
-}
-
 resource "kubernetes_daemonset" "otel_load_test" {
   metadata {
     name      = var.repository_name
@@ -122,7 +35,7 @@ resource "kubernetes_daemonset" "otel_load_test" {
 
           env {
             name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
-            value = "http://otel-collector:4317"
+            value = "http://otel-opentelemetry-collector:4317"
           }
 
           env {

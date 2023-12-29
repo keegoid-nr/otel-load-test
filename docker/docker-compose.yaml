@@ -27,9 +27,7 @@ services:
       - ./otel-config-${OTEL_CONFIG_COMPLEXITY}.yaml:/otel-config.yaml
     command: ["--config=/otel-config.yaml"]
     environment:
-      NEW_RELIC_OTLP_ENDPOINT: ${NEW_RELIC_OTLP_ENDPOINT}
       NEW_RELIC_API_KEY: '${NEW_RELIC_API_KEY}'
-      LOG_EXPORTER_VERBOSITY: '${LOG_EXPORTER_VERBOSITY}'
     ports:
       - 1777:1777 # pprof extension | https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/extension/pprofextension/README.md
       # - 8888:8888 # Prometheus metrics exposed by the collector

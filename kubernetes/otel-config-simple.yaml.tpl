@@ -1,6 +1,6 @@
 exporters:
   debug:
-    verbosity: ${LOG_EXPORTER_VERBOSITY}
+    verbosity: basic
   otlp:
     endpoint: "https://otlp.nr-data.net:4317"
     headers:
@@ -31,7 +31,9 @@ receivers:
   otlp:
     protocols:
       grpc:
+        endpoint: ${env:MY_POD_IP}:4317
       http:
+        endpoint: ${env:MY_POD_IP}:4318
 
 service:
   extensions: [pprof, zpages, health_check]

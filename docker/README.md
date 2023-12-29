@@ -18,7 +18,6 @@ Create a `.env` file to store environment variables for the [build_and_run.sh](.
 
 ```sh
 NEW_RELIC_API_KEY=<your_key>
-LOG_EXPORTER_VERBOSITY=basic # basic or detailed
 OTEL_CONFIG_COMPLEXITY=complex # simple or complex
 RUNTIME=go # go or python
 ```

@@ -1,23 +1,13 @@
-data "template_file" "otel_config" {
-  template = file("${path.module}/otel-config-${var.OTEL_CONFIG_COMPLEXITY}.yaml.tpl")
+# resource "kubernetes_config_map" "otel_config" {
+#   metadata {
+#     name = "otel-config"
+#     namespace = kubernetes_namespace.otel.metadata[0].name
+#   }
 
-  vars = {
-    LOG_EXPORTER_VERBOSITY = var.LOG_EXPORTER_VERBOSITY
-    NEW_RELIC_OTLP_ENDPOINT = var.NEW_RELIC_OTLP_ENDPOINT
-    NEW_RELIC_API_KEY = var.NEW_RELIC_API_KEY
-  }
-}
-
-resource "kubernetes_config_map" "otel_config" {
-  metadata {
-    name = "otel-config"
-    namespace = kubernetes_namespace.otel.metadata[0].name
-  }
-
-  data = {
-    "otel-config.yaml" = data.template_file.otel_config.rendered
-  }
-}
+#   data = {
+#     "otel-config.yaml" = data.template_file.otel_config.rendered
+#   }
+# }
 
 #   data = {
 #     "otel-config.yaml" = <<EOT

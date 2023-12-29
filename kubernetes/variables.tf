@@ -61,20 +61,9 @@ variable "description" {
   type        = string
 }
 
-variable "NEW_RELIC_OTLP_ENDPOINT" {
-  description = "The New Relic OTLP endpoint for metrics"
-  type        = string
-}
-
 variable "NEW_RELIC_API_KEY" {
   description = "The New Relic API key"
   type        = string
-}
-
-variable "LOG_EXPORTER_VERBOSITY" {
-  description = "Verbosity level for the logging exporter"
-  type        = string
-  default     = "basic"
 }
 
 variable "OTEL_CONFIG_COMPLEXITY" {

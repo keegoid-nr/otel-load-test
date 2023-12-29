@@ -1,10 +1,10 @@
 exporters:
   debug:
-    verbosity: $LOG_EXPORTER_VERBOSITY
+    verbosity: basic
   otlp:
     endpoint: "https://otlp.nr-data.net:4317"
     headers:
-      "api-key": $NEW_RELIC_API_KEY
+      "api-key": ${NEW_RELIC_API_KEY}
     compression: gzip
     # retry_on_failure:
     #   enabled: true
